@@ -1,0 +1,37 @@
+name: Post any per-directory comments
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  gen-matrix:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate Matrix
+        id: gen-matrix-step
+        run: |
+          #!/bin/bash
+          output="[\"foo\", \"bar\"]"
+          echo "$output"
+          echo "$output" | jq -c '.'
+          echo "variants=$output" >> $GITHUB_OUTPUT
+    outputs:
+      variants: ${{ steps.gen-matrix-step.outputs.variants }}
+  post-comments:
+    needs:
+      - gen-matrix
+    name: run-matrix
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: ${{ fromJSON(needs.gen-matrix.outputs.variants) }}
+    permissions:
+      contents: read  # Required for actions/checkout
+      pull-requests: write # Required for marocchino/sticky-pull-request-comment
+    steps:
+      - run: |
+          #!/bin/bash
+          echo "${{ matrix.variant }}"
